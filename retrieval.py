@@ -5,8 +5,7 @@ model = SentenceTransformer(
     "all-MiniLM-L6-v2"
 )
 
-
-def retrieve_chunks(query, k=3):
+def retrieve_chunks(query, k=5):
 
     client = chromadb.PersistentClient(
         path="./chroma_db"
