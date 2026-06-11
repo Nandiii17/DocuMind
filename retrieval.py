@@ -5,7 +5,8 @@ model = SentenceTransformer(
     "all-MiniLM-L6-v2"
 )
 
-def retrieve_chunks(query, k=5):
+
+def retrieve_chunks(query, k=10):
 
     client = chromadb.PersistentClient(
         path="./chroma_db"
@@ -24,4 +25,22 @@ def retrieve_chunks(query, k=5):
         n_results=k
     )
 
-    return results["documents"][0]
+    documents = results["documents"][0]
+
+    metadatas = results["metadatas"][0]
+
+    retrieved_chunks = []
+
+    for doc, metadata in zip(
+        documents,
+        metadatas
+    ):
+
+        retrieved_chunks.append(
+            {
+                "text": doc,
+                "page": metadata["page"]
+            }
+        )
+
+    return retrieved_chunks

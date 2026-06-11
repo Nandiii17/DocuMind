@@ -7,8 +7,13 @@ model = SentenceTransformer(
 
 def generate_embeddings(chunks):
 
+    texts = [
+        chunk["text"]
+        for chunk in chunks
+    ]
+
     embeddings = model.encode(
-        chunks
+        texts
     ).tolist()
 
     return embeddings

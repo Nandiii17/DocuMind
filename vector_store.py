@@ -27,8 +27,20 @@ def store_chunks(chunks, embeddings):
     )
 
     # ==========================================
-    # CREATE IDS
+    # PREPARE DATA
     # ==========================================
+
+    documents = [
+        chunk["text"]
+        for chunk in chunks
+    ]
+
+    metadatas = [
+        {
+            "page": chunk["page"]
+        }
+        for chunk in chunks
+    ]
 
     ids = [
         f"chunk_{i}"
@@ -36,12 +48,13 @@ def store_chunks(chunks, embeddings):
     ]
 
     # ==========================================
-    # STORE CHUNKS
+    # STORE IN CHROMADB
     # ==========================================
 
     collection.add(
-        documents=chunks,
+        documents=documents,
         embeddings=embeddings,
+        metadatas=metadatas,
         ids=ids
     )
 
