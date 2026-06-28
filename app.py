@@ -35,6 +35,9 @@ if "chunk_count" not in st.session_state:
 if "retrieval_query" not in st.session_state:
     st.session_state.retrieval_query = None
 
+if "answer_mode" not in st.session_state:
+    st.session_state.answer_mode = None
+
 # ==========================================
 # TITLE
 # ==========================================
@@ -42,12 +45,12 @@ if "retrieval_query" not in st.session_state:
 st.title("📄 DocuMind")
 
 # ==========================================
-# SIDEBAR DASHBOARD
+# SIDEBAR — CONFIGURATION
 # ==========================================
 
 with st.sidebar:
 
-    st.header("⚙️ System Dashboard")
+    st.header("⚙️ Configuration")
 
     st.write("Embedding Model")
     st.info("all-MiniLM-L6-v2")
@@ -55,14 +58,19 @@ with st.sidebar:
     st.write("LLM")
     st.info("Phi-3")
 
-    st.write("Chunk Size")
-    st.info("300")
+    st.write("Vector Database")
+    st.info("ChromaDB")
 
-    st.write("Chunk Overlap")
-    st.info("50")
-
-    st.write("Top-K Retrieval")
+    st.write("Top-K")
     st.info("10")
+
+    if st.session_state.chunk_count:
+
+        st.write("Chunks")
+
+        st.info(
+            st.session_state.chunk_count
+        )
 
     if st.session_state.pdf_name:
 
@@ -70,14 +78,6 @@ with st.sidebar:
 
         st.info(
             st.session_state.pdf_name
-        )
-
-    if st.session_state.chunk_count:
-
-        st.write("Chunks Stored")
-
-        st.info(
-            st.session_state.chunk_count
         )
 
 st.write("Upload a PDF and ask questions about it.")
@@ -202,6 +202,7 @@ with col5:
 
 retrieval_query = None
 display_question = None
+answer_mode = None
 
 if summary_btn:
 
@@ -213,6 +214,8 @@ if summary_btn:
         "Provide a summary of this document."
     )
 
+    answer_mode = "summary"
+
 elif methodology_btn:
 
     retrieval_query = (
@@ -222,6 +225,8 @@ elif methodology_btn:
     display_question = (
         "What methodology is used in this document?"
     )
+
+    answer_mode = "methodology"
 
 elif results_btn:
 
@@ -233,6 +238,8 @@ elif results_btn:
         "What are the key results discussed in this document?"
     )
 
+    answer_mode = "results"
+
 elif limitations_btn:
 
     retrieval_query = (
@@ -243,6 +250,8 @@ elif limitations_btn:
         "What limitations are discussed in this document?"
     )
 
+    answer_mode = "limitations"
+
 elif future_work_btn:
 
     retrieval_query = (
@@ -252,6 +261,8 @@ elif future_work_btn:
     display_question = (
         "What future work or future directions are suggested in this document?"
     )
+
+    answer_mode = "future_work"
 
 # ==========================================
 # CHAT HISTORY
@@ -282,6 +293,7 @@ if display_question:
     question = display_question
 
     st.session_state.auto_ask = True
+    st.session_state.answer_mode = answer_mode
 
 ask_clicked = st.button("Ask")
 
@@ -315,14 +327,32 @@ if ask_clicked or st.session_state.auto_ask:
                     for chunk in retrieved_chunks
                 )
 
-                # Generate answer using display question
-                answer = generate_answer(
-                    context,
-                    question
+                # Determine which mode to use for this answer
+                active_mode = (
+                    answer_mode
+                    if answer_mode
+                    else st.session_state.answer_mode
                 )
+
+                # Generate answer using mode-specific prompt
+                if active_mode:
+
+                    answer = generate_answer(
+                        context,
+                        question,
+                        active_mode
+                    )
+
+                else:
+
+                    answer = generate_answer(
+                        context,
+                        question
+                    )
 
                 st.session_state.auto_ask = False
                 st.session_state.retrieval_query = None
+                st.session_state.answer_mode = None
 
                 # Store in chat history
                 st.session_state.chat_history.append(
@@ -337,19 +367,19 @@ if ask_clicked or st.session_state.auto_ask:
                 )
 
             # ==========================================
-            # SOURCES
+            # SUPPORTING EVIDENCE
             # ==========================================
 
-            with st.expander("📚 Retrieved Context"):
+            with st.expander("📚 Supporting Evidence"):
 
                 for i, chunk in enumerate(retrieved_chunks):
 
                     st.markdown(
-                        f"### Retrieved Chunk {i+1}"
+                        f"### Evidence {i+1}"
                     )
 
                     st.markdown(
-                        f"**Source: Page {chunk['page']}**"
+                        f"📄 Page {chunk['page']}"
                     )
 
                     st.text(
@@ -359,10 +389,10 @@ if ask_clicked or st.session_state.auto_ask:
                     st.divider()
 
             # ==========================================
-            # ANSWER
+            # ANALYSIS
             # ==========================================
 
-            st.subheader("🤖 Answer")
+            st.subheader("📑 Analysis")
 
             st.write(answer)
 
@@ -382,3 +412,16 @@ if ask_clicked or st.session_state.auto_ask:
             st.error(
                 f"Error generating answer: {e}"
             )
+
+# ==========================================
+# FOOTER
+# ==========================================
+
+st.divider()
+
+st.markdown(
+    "<p style='text-align: center; color: gray;'>"
+    "Built using Streamlit • ChromaDB • Sentence Transformers • Phi-3 (Ollama)"
+    "</p>",
+    unsafe_allow_html=True
+)
